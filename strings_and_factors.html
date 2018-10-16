@@ -129,7 +129,114 @@ $(document).ready(function () {
 </div>
 
 
+<pre class="r"><code>string_vec = c(&quot;my&quot;, &quot;name&quot;, &quot;is&quot;, &quot;jeff&quot;)
 
+str_detect(string_vec, &quot;jeff&quot;)</code></pre>
+<pre><code>## [1] FALSE FALSE FALSE  TRUE</code></pre>
+<pre class="r"><code>str_replace(string_vec, &quot;jeff&quot;, &quot;Jeff&quot;)</code></pre>
+<pre><code>## [1] &quot;my&quot;   &quot;name&quot; &quot;is&quot;   &quot;Jeff&quot;</code></pre>
+<pre class="r"><code>string_vec_2 = c(
+  &quot;i think we all rule for participating&quot;,
+  &quot;i think i have been caught&quot;,
+  &quot;i think this will be quite fun actually&quot;,
+  &quot;it will be fun, i think&quot;
+  )
+
+str_detect(string_vec_2, &quot;i think&quot;)</code></pre>
+<pre><code>## [1] TRUE TRUE TRUE TRUE</code></pre>
+<pre class="r"><code>str_detect(string_vec_2, &quot;^i think&quot;)</code></pre>
+<pre><code>## [1]  TRUE  TRUE  TRUE FALSE</code></pre>
+<pre class="r"><code>str_detect(string_vec_2, &quot;i think$&quot;)</code></pre>
+<pre><code>## [1] FALSE FALSE FALSE  TRUE</code></pre>
+<pre class="r"><code>string_vec_3 = c(
+  &quot;Y'all remember Pres. HW Bush?&quot;,
+  &quot;I saw a green bush&quot;,
+  &quot;BBQ and Bushwalking at Molonglo Gorge&quot;,
+  &quot;BUSH!!&quot;
+  )
+
+str_detect(string_vec_3,&quot;[Bb]ush&quot;)</code></pre>
+<pre><code>## [1]  TRUE  TRUE  TRUE FALSE</code></pre>
+<p>find instances that start with number and followed immediately by a letter</p>
+<pre class="r"><code>string_vec_4 = c(
+  '7th inning stretch',
+  '1st half soon to begin. Texas won the toss.',
+  'she is 5 feet 4 inches tall',
+  '3AM - cant sleep :('
+  )
+
+str_detect(string_vec_4, &quot;^[0-9][a-zA-Z]&quot;)</code></pre>
+<pre><code>## [1]  TRUE  TRUE FALSE  TRUE</code></pre>
+<p>. matches anything to a dot</p>
+<pre class="r"><code>string_vec_5 = c(
+  'Its 7:11 in the evening',
+  'want to go to 7-11?',
+  'my flight is AA711',
+  'NetBios: scanning ip 203.167.114.66'
+  )
+
+str_detect(string_vec_5, &quot;7.11&quot;)</code></pre>
+<pre><code>## [1]  TRUE  TRUE FALSE  TRUE</code></pre>
+<pre class="r"><code>string_vec_6 = c(
+  'The CI is [2, 5]',
+  ':-]',
+  ':-[',
+  'I found the answer on pages [6-7]'
+  )
+
+str_detect(string_vec_6, &quot;\\[&quot;)</code></pre>
+<pre><code>## [1]  TRUE FALSE  TRUE  TRUE</code></pre>
+<div id="pulse-data" class="section level3">
+<h3>PULSE data</h3>
+<p>Tidy the PULSE datae</p>
+<pre class="r"><code>pulse_data = haven::read_sas(&quot;./data/public_pulse_data.sas7bdat&quot;) %&gt;%
+  janitor::clean_names() %&gt;%
+  gather(key = visit, value = bdi, bdi_score_bl:bdi_score_12m) %&gt;%
+  mutate(visit = str_replace(visit, &quot;bdi_score_&quot;, &quot;&quot;),
+         visit = str_replace(visit, &quot;bl&quot;, &quot;00m&quot;) ,
+         visit = fct_relevel(visit, str_c(c(&quot;00&quot;, &quot;01&quot;, &quot;06&quot;, &quot;12&quot;), &quot;m&quot;))) %&gt;%
+  arrange(id, visit)</code></pre>
+<pre><code>## Warning: attributes are not identical across measure variables;
+## they will be dropped</code></pre>
+<pre class="r"><code>print(pulse_data, n = 12)</code></pre>
+<pre><code>## # A tibble: 4,348 x 5
+##       id   age sex   visit   bdi
+##    &lt;dbl&gt; &lt;dbl&gt; &lt;chr&gt; &lt;fct&gt; &lt;dbl&gt;
+##  1 10003  48.0 male  00m       7
+##  2 10003  48.0 male  01m       1
+##  3 10003  48.0 male  06m       2
+##  4 10003  48.0 male  12m       0
+##  5 10015  72.5 male  00m       6
+##  6 10015  72.5 male  01m      NA
+##  7 10015  72.5 male  06m      NA
+##  8 10015  72.5 male  12m      NA
+##  9 10022  58.5 male  00m      14
+## 10 10022  58.5 male  01m       3
+## 11 10022  58.5 male  06m       8
+## 12 10022  58.5 male  12m      NA
+## # ... with 4,336 more rows</code></pre>
+</div>
+<div id="nsduh" class="section level3">
+<h3>NSDUH</h3>
+<pre class="r"><code>url = &quot;http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm&quot;
+drug_use_xml = read_html(url)
+
+table_marj = (drug_use_xml %&gt;% html_nodes(css = &quot;table&quot;)) %&gt;% 
+  .[[1]] %&gt;%
+  html_table() %&gt;%
+  slice(-1) %&gt;%
+  as_tibble()</code></pre>
+<p>Clean up the imported data…</p>
+<pre class="r"><code>data_marj = 
+  table_marj %&gt;%
+  select(-contains(&quot;P Value&quot;)) %&gt;%
+  gather(key = key, value = percent, -State) %&gt;%
+  separate(key, into = c(&quot;age&quot;, &quot;year&quot;), sep = &quot;\\(&quot;) %&gt;%
+  mutate(year = str_replace(year, &quot;\\)&quot;, &quot;&quot;),
+         percent = str_replace(percent, &quot;[a-c]$&quot;, &quot;&quot;),
+         percent = as.numeric(percent)) %&gt;%
+  filter(!(State %in% c(&quot;Total U.S.&quot;, &quot;Northeast&quot;, &quot;Midwest&quot;, &quot;South&quot;, &quot;West&quot;)))</code></pre>
+</div>
 
 
 

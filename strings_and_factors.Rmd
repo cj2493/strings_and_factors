@@ -3,6 +3,8 @@ title: "strings_and_factors"
 author: "Courtney Johnson"
 date: "October 16, 2018"
 output: html_document
+editor_options: 
+  chunk_output_type: console
 ---
 
 ```{r setup, include=FALSE}
@@ -11,5 +13,125 @@ knitr::opts_chunk$set(
   fig.asp = .6,
   out.width = "90%"
 )
+library(tidyverse)
+library(rvest)
+library(p8105.datasets)
+theme_set(theme_bw() + theme(legend.position = "bottom"))
+```
+
+
+```{r}
+string_vec = c("my", "name", "is", "jeff")
+
+str_detect(string_vec, "jeff")
+str_replace(string_vec, "jeff", "Jeff")
+```
+
+```{r}
+string_vec_2 = c(
+  "i think we all rule for participating",
+  "i think i have been caught",
+  "i think this will be quite fun actually",
+  "it will be fun, i think"
+  )
+
+str_detect(string_vec_2, "i think")
+str_detect(string_vec_2, "^i think")
+str_detect(string_vec_2, "i think$")
+```
+
+```{r}
+string_vec_3 = c(
+  "Y'all remember Pres. HW Bush?",
+  "I saw a green bush",
+  "BBQ and Bushwalking at Molonglo Gorge",
+  "BUSH!!"
+  )
+
+str_detect(string_vec_3,"[Bb]ush")
+```
+
+
+find instances that start with number and followed immediately by a letter
+```{r}
+string_vec_4 = c(
+  '7th inning stretch',
+  '1st half soon to begin. Texas won the toss.',
+  'she is 5 feet 4 inches tall',
+  '3AM - cant sleep :('
+  )
+
+str_detect(string_vec_4, "^[0-9][a-zA-Z]")
+```
+
+
+. matches anything to a dot
+```{r}
+string_vec_5 = c(
+  'Its 7:11 in the evening',
+  'want to go to 7-11?',
+  'my flight is AA711',
+  'NetBios: scanning ip 203.167.114.66'
+  )
+
+str_detect(string_vec_5, "7.11")
+```
+
+
+```{r}
+string_vec_6 = c(
+  'The CI is [2, 5]',
+  ':-]',
+  ':-[',
+  'I found the answer on pages [6-7]'
+  )
+
+str_detect(string_vec_6, "\\[")
+```
+
+
+### PULSE data
+
+Tidy the PULSE datae
+```{r}
+pulse_data = haven::read_sas("./data/public_pulse_data.sas7bdat") %>%
+  janitor::clean_names() %>%
+  gather(key = visit, value = bdi, bdi_score_bl:bdi_score_12m) %>%
+  mutate(visit = str_replace(visit, "bdi_score_", ""),
+         visit = str_replace(visit, "bl", "00m") ,
+         visit = fct_relevel(visit, str_c(c("00", "01", "06", "12"), "m"))) %>%
+  arrange(id, visit)
+
+
+print(pulse_data, n = 12)
+```
+
+### NSDUH
+
+```{r}
+url = "http://samhda.s3-us-gov-west-1.amazonaws.com/s3fs-public/field-uploads/2k15StateFiles/NSDUHsaeShortTermCHG2015.htm"
+drug_use_xml = read_html(url)
+
+table_marj = (drug_use_xml %>% html_nodes(css = "table")) %>% 
+  .[[1]] %>%
+  html_table() %>%
+  slice(-1) %>%
+  as_tibble()
+
+
+```
+
+
+Clean up the imported data...
+```{r}
+data_marj = 
+  table_marj %>%
+  select(-contains("P Value")) %>%
+  gather(key = key, value = percent, -State) %>%
+  separate(key, into = c("age", "year"), sep = "\\(") %>%
+  mutate(year = str_replace(year, "\\)", ""),
+         percent = str_replace(percent, "[a-c]$", ""),
+         percent = as.numeric(percent)) %>%
+  filter(!(State %in% c("Total U.S.", "Northeast", "Midwest", "South", "West")))
 ```
 
